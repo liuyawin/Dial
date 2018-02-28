@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>转盘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #bg {
+            width: 640px;
+            position: absolute;
+            top: 4980px;
+            left: 2266px;
+        }
+
+        #canvas {
+            border: 1px solid blue;
+            display: block;
+            margin: 32px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="640px" height="320px"></canvas>
+
+    <script src="dial.js"></script>
+    <script>
+        var options = {
+            p1: {
+                x: 0,
+                y: 200
+            },
+            p2: {
+                x: 640,
+                y: 100
+            },
+            angle: 30,
+            activities: [
+                {
+                    date: '3月1号',
+                    content: '战略发布会'
+                },
+                {
+                    date: '3月2号',
+                    content: '新游戏发布会'
+                },
+                {
+                    date: '3月2号',
+                    content: '完记者会'
+                },
+                {
+                    date: '3月5号',
+                    content: '线上交流会'
+                },
+                {
+                    date: '3月6号',
+                    content: '什么时代'
+                },
+                {
+                    date: '3月7号',
+                    content: '新闻发布会'
+                },
+                {
+                    date: '3月21号',
+                    content: '记者会'
+                },
+                {
+                    date: '4月2号',
+                    content: '哈啊哈记者会'
+                },
+                {
+                    date: '4月5号',
+                    content: '线上交流会'
+                },
+                {
+                    date: '4月6号',
+                    content: '这是什么'
+                },
+                {
+                    date: '4月7号',
+                    content: '新闻发布会'
+                },
+                {
+                    date: '4月21号',
+                    content: '记者会'
+                }
+            ]
+        }
+        var dial = new Dial(document.getElementById('canvas'), options);
+    </script>
+</body>
+
+</html>
