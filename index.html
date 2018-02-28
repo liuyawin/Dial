@@ -12,6 +12,38 @@
             padding: 0;
         }
 
+        #dial {
+            width: 640px;
+            height: 320px;
+            border: 1px solid blue;
+            margin: 32px auto;
+            position: relative;
+        }
+
+        .dial-tip {
+            position: absolute;
+            padding: 16px;
+            background-color: red;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .dial-tip .dial-triangle {
+            position: absolute;
+            top: -12px;
+            left: 24px;
+            width: 0;
+            height: 0;
+            border-width: 0 12px 12px;
+            border-style: dashed dashed solid;
+            border-color: transparent transparent red;
+        }
+
+        .dial-tip p {
+            text-align: center;
+            color: white;
+        }
+
         #bg {
             width: 640px;
             position: absolute;
@@ -19,17 +51,15 @@
             left: 2266px;
         }
 
-        #canvas {
-            border: 1px solid blue;
-            display: block;
-            margin: 32px auto;
-        }
+        #canvas {}
     </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="640px" height="320px"></canvas>
-
+    <div id="dial">
+        <canvas id="canvas" width="640px" height="320px"></canvas>
+    </div>
+    <script src="jquery-1.11.3.min.js"></script>
     <script src="dial.js"></script>
     <script>
         var options = {
@@ -44,52 +74,72 @@
             angle: 30,
             activities: [
                 {
-                    date: '3月1号',
+                    date: '2月22日',
                     content: ['战略发布会']
                 },
                 {
-                    date: '3月2号',
+                    date: '2月24日',
                     content: ['新游戏发布会', '记者会']
                 },
                 {
-                    date: '3月5号',
+                    date: '2月26日',
                     content: ['线上交流会']
                 },
                 {
-                    date: '3月6号',
+                    date: '2月27日',
                     content: ['什么时代']
                 },
                 {
-                    date: '3月7号',
+                    date: '2月28日',
                     content: ['新闻发布会']
                 },
                 {
-                    date: '3月11号',
-                    content: ['记者会', '哈啊哈记者会', '党员大会活动']
+                    date: '3月1日',
+                    content: ['战略发布会']
                 },
                 {
-                    date: '3月12号',
-                    content: ['哈啊哈记者会']
+                    date: '3月2日',
+                    content: ['新游戏发布会', '记者会']
                 },
                 {
-                    date: '3月14号',
+                    date: '3月5日',
                     content: ['线上交流会']
                 },
                 {
-                    date: '3月16号',
-                    content: ['这是什么']
+                    date: '3月6日',
+                    content: ['什么时代']
                 },
                 {
-                    date: '3月20号',
+                    date: '3月7日',
                     content: ['新闻发布会']
                 },
                 {
-                    date: '3月22号',
+                    date: '3月11日',
+                    content: ['记者会', '哈啊哈记者会', '党员大会活动']
+                },
+                {
+                    date: '3月12日',
+                    content: ['哈啊哈记者会']
+                },
+                {
+                    date: '3月14日',
+                    content: ['线上交流会']
+                },
+                {
+                    date: '3月16日',
+                    content: ['这是什么']
+                },
+                {
+                    date: '3月20日',
+                    content: ['新闻发布会']
+                },
+                {
+                    date: '3月22日',
                     content: ['记者会']
                 }
             ]
         }
-        var dial = new Dial(document.getElementById('canvas'), options);
+        var dial = new Dial($('#dial'), options);
     </script>
 </body>
 

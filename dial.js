@@ -1,16 +1,21 @@
-var Dial = function (canvas, options) {
-    this.canvas = canvas;
+var Dial = function (node, options) {
+    this.node = node;
+    this.$canvas = node.find('canvas');
+    this.canvas = this.$canvas[0];
     this.options = options;
     this.ctx = canvas.getContext('2d');
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
     this.activitySpan = [];//两个活动之间间隔的天数
-    this.curSpan = 1;//当前剩余的天数跨度
+    this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.curActiIndex = 0;//当前绘制的活动的索引
 
     this.moveLength = 0;//鼠标移动的累加距离
+    this.maxAngle = 0;
     this.offsetAngle = 0;//转动时的偏移坐标，初始为0
+
+    this.isLeft = false;//是否已经转到最左边
 
     //长、短刻度的宽高
     this.longTickWidth = 4;
@@ -30,6 +35,7 @@ Dial.prototype = {
         }
         this.initActivitySpan();//计算每两个活动之间间隔的天数
         this.createDial();
+        this.createTipNode();
         this.bindEvent();
     },
     initActivitySpan: function () {
@@ -38,7 +44,6 @@ Dial.prototype = {
             var next = this.options.activities[i + 1];
             this.activitySpan.push(this.getDayCount(cur.date, next.date));
         }
-        console.log(this.activitySpan)
     },
     //获取两个日期之间的天数
     getDayCount: function (curDate, nextDate) {
@@ -64,8 +69,9 @@ Dial.prototype = {
         this.drawArc();//绘制圆弧
         this.drawScales();//绘制刻度
     },
-    initParams: function(){
-        this.curSpan = 1;
+    initParams: function () {
+        this.isLeft = false;
+        this.curSpan = 2;
         this.curActiIndex = this.options.activities.length;//当前活动的索引，从最后一个开始
     },
     calculateRadius: function () {
@@ -95,7 +101,7 @@ Dial.prototype = {
             ANGlE_DELTA = Math.PI / 320,//刻度的间隔
             tickWidth;
 
-        this.initParams();//重新初始化相关参数
+        this.initParams();//重置相关参数
 
         this.ctx.save();
 
@@ -142,8 +148,13 @@ Dial.prototype = {
                 this.curSpan--;
                 return;
             }
+
             this.curActiIndex--;
             this.curSpan = this.activitySpan[this.curActiIndex - 1];//当前日期和上一个日期间隔的天数
+
+            if (this.curActiIndex < 0) {
+                return;
+            }
 
             //绘制小圆圈
             r = 4;
@@ -153,10 +164,10 @@ Dial.prototype = {
             this.drawDot(
                 circleX + Math.cos(angle) * (radius - tickWidth),
                 circleY + Math.sin(angle) * (radius - tickWidth),
-                r,
-                0,
-                Math.PI * 2
+                r
             );
+
+            this.ctx.font = '12px Microsoft Yahei';
             //绘制文本
             this.drawText(
                 circleX + Math.cos(angle) * (radius - tickWidth),
@@ -166,11 +177,11 @@ Dial.prototype = {
             this.ctx.restore();
         }
     },
-    drawDot: function (x, y, r, startAngle, endAngle) {
+    drawDot: function (x, y, r) {
         this.ctx.save();
 
         this.ctx.strokeStyle = 'red';
-        this.fillStyle = 'rgba(25, 24, 25, 1)'
+        this.fillStyle = 'rgba(25, 24, 25, 1)';
         this.ctx.lineWidth = 4;
 
         this.ctx.beginPath();
@@ -179,8 +190,9 @@ Dial.prototype = {
             x,
             y,
             r,
-            startAngle,
-            endAngle
+            0,
+            Math.PI * 2,
+            true
         );
 
         this.ctx.stroke();
@@ -201,24 +213,40 @@ Dial.prototype = {
         }
 
     },
+    createTipNode: function () {
+        for (var i = 0; i < this.options.activities.length; i++) {
+            var activity = this.options.activities[i];
+            var div = $('<div class="dial-tip dial-tip' + i + '"><b class="dial-triangle"></b></div>');
+            for (var j = 0; j < activity.content.length; j++) {
+                var content = activity.content[j];
+                var p = $('<p>' + content + '</p>');
+                div.append(p);
+            }
+            this.node.append(div);
+        }
+    },
     bindEvent: function () {
         this.mouseMoveFunc = this.handleMouseMove.call(this);
         this.mouseUpFunc = this.handleMouseUp.call(this);
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.call(this));
+        this.$canvas.on('mousedown', this.handleMouseDown.call(this));
     },
     handleMouseDown: function () {
         var _this = this;
         return function (e) {
             _this.preX = e.screenX;
-            document.addEventListener('mouseup', _this.mouseUpFunc);
-            document.addEventListener('mousemove', _this.mouseMoveFunc);
+            $(document).on('mouseup', _this.mouseUpFunc);
+            $(document).on('mousemove', _this.mouseMoveFunc);
         }
     },
     handleMouseMove: function () {
         var _this = this;
         return function (e) {
 
-            if (_this.offsetAngle > 0 && e.screenX - _this.preX < 0) {//
+            if (_this.offsetAngle > 0 && e.screenX - _this.preX < 0) {//最右边再向右拉时拉不动
+                return;
+            }
+
+            if (_this.isLeft && e.screenX - _this.preX > 0) {//最左边再向左拉时拉不动
                 return;
             }
 
@@ -238,8 +266,8 @@ Dial.prototype = {
     handleMouseUp: function () {
         var _this = this;
         return function () {
-            document.removeEventListener('mouseup', _this.mouseUpFunc);
-            document.removeEventListener('mousemove', _this.mouseMoveFunc);
+            $(document).off('mouseup', _this.mouseUpFunc);
+            $(document).off('mousemove', _this.mouseMoveFunc);
         }
     }
 }
