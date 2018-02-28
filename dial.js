@@ -5,7 +5,11 @@ var Dial = function (canvas, options) {
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
-    this.moveLength = 0;//鼠标移动的距离
+    this.activitySpan = [];//两个活动之间间隔的天数
+    this.curSpan = 1;//当前剩余的天数跨度
+    this.curActiIndex = 0;//当前绘制的活动的索引
+
+    this.moveLength = 0;//鼠标移动的累加距离
     this.offsetAngle = 0;//转动时的偏移坐标，初始为0
 
     //长、短刻度的宽高
@@ -13,7 +17,7 @@ var Dial = function (canvas, options) {
     this.longTickHeight = 18;
     this.shortTickHeight = 10;
 
-    this.longTickDistance = 20;//控制长刻度的距离
+    this.longTickDistance = 10;//控制长刻度的距离
 
     this.init();
 }
@@ -21,14 +25,48 @@ var Dial = function (canvas, options) {
 Dial.prototype = {
     constructor: Dial,
     init: function () {
+        if (!this.options.activities) {
+            return;
+        }
+        this.initActivitySpan();//计算每两个活动之间间隔的天数
         this.createDial();
         this.bindEvent();
+    },
+    initActivitySpan: function () {
+        for (var i = 0; i < this.options.activities.length - 1; i++) {
+            var cur = this.options.activities[i];
+            var next = this.options.activities[i + 1];
+            this.activitySpan.push(this.getDayCount(cur.date, next.date));
+        }
+        console.log(this.activitySpan)
+    },
+    //获取两个日期之间的天数
+    getDayCount: function (curDate, nextDate) {
+        var curYear = (new Date()).getFullYear();
+
+        var curMonth = curDate.substring(0, curDate.indexOf('月'));
+        var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
+
+        var nextMonth = nextDate.substring(0, nextDate.indexOf('月'));
+        var nextDay = nextDate.substring(nextDate.indexOf('月') + 1, nextDate.length - 1);
+
+        var formatCur = Date.parse(curYear + '-' + curMonth + '-' + curDay);
+        var formatNext = Date.parse(curYear + '-' + nextMonth + '-' + nextDay);
+        var dateSpan = formatNext - formatCur;
+        dateSpan = Math.abs(dateSpan);
+        var dateCount = Math.floor(dateSpan / (24 * 3600 * 1000));
+
+        return dateCount;
     },
     createDial: function () {
         this.calculateRadius();//计算半径
         this.calculateO();//计算圆心坐标
         this.drawArc();//绘制圆弧
         this.drawScales();//绘制刻度
+    },
+    initParams: function(){
+        this.curSpan = 1;
+        this.curActiIndex = this.options.activities.length;//当前活动的索引，从最后一个开始
     },
     calculateRadius: function () {
         this.lineLength = Math.sqrt(Math.pow(this.options.p2.x, 2) + Math.pow(this.options.p2.y - this.options.p1.y, 2));//传入的两点连线的长度
@@ -57,15 +95,21 @@ Dial.prototype = {
             ANGlE_DELTA = Math.PI / 320,//刻度的间隔
             tickWidth;
 
+        this.initParams();//重新初始化相关参数
+
         this.ctx.save();
 
-        for (var angle = this.auxAngle, cnt = 0; angle < Math.PI * 2; angle += ANGlE_DELTA, cnt++) {
+        for (var angle = this.auxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.32; angle += ANGlE_DELTA, cnt++) {
             this.drawScale(angle + this.offsetAngle, radius, cnt++);
         }
 
         this.ctx.restore();
     },
     drawScale: function (angle, radius, cnt) {
+        if (this.curActiIndex < 0) {
+            return;
+        }
+
         var circleX = this.o.x;
         var circleY = this.o.y;
 
@@ -75,25 +119,7 @@ Dial.prototype = {
         var tickWidth = isLong ? this.longTickHeight : this.shortTickHeight,
             radius = isLong ? radius : radius - this.longTickHeight + this.shortTickHeight;
 
-
-        if (isLong) {
-            //绘制小圆圈
-            r = 4;
-            this.drawDot(
-                circleX + Math.cos(angle) * (radius - tickWidth),
-                circleY + Math.sin(angle) * (radius - tickWidth),
-                r,
-                0,
-                Math.PI * 2
-            );
-            //绘制文本
-            this.drawText(
-                circleX + Math.cos(angle) * (radius - tickWidth),
-                circleY + Math.sin(angle) * (radius - tickWidth),
-                cnt
-            );
-        }
-
+        //绘制刻度线
         this.ctx.beginPath();
         this.ctx.moveTo(
             circleX + Math.cos(angle) * (radius - tickWidth - r),
@@ -105,9 +131,40 @@ Dial.prototype = {
             circleY + Math.sin(angle) * (radius)
         );
 
+        this.ctx.save();
         this.ctx.lineWidth = isLong ? this.longTickWidth : 1;
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         this.ctx.stroke();
+        this.ctx.restore();
+
+        if (isLong) {
+            if (this.curSpan > 1) {
+                this.curSpan--;
+                return;
+            }
+            this.curActiIndex--;
+            this.curSpan = this.activitySpan[this.curActiIndex - 1];//当前日期和上一个日期间隔的天数
+
+            //绘制小圆圈
+            r = 4;
+            this.ctx.save();
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            this.drawDot(
+                circleX + Math.cos(angle) * (radius - tickWidth),
+                circleY + Math.sin(angle) * (radius - tickWidth),
+                r,
+                0,
+                Math.PI * 2
+            );
+            //绘制文本
+            this.drawText(
+                circleX + Math.cos(angle) * (radius - tickWidth),
+                circleY + Math.sin(angle) * (radius - tickWidth),
+            );
+
+            this.ctx.restore();
+        }
     },
     drawDot: function (x, y, r, startAngle, endAngle) {
         this.ctx.save();
@@ -115,7 +172,7 @@ Dial.prototype = {
         this.ctx.strokeStyle = 'red';
         this.fillStyle = 'rgba(25, 24, 25, 1)'
         this.ctx.lineWidth = 4;
-        
+
         this.ctx.beginPath();
 
         this.ctx.arc(
@@ -130,8 +187,8 @@ Dial.prototype = {
         this.ctx.fill();
         this.ctx.restore();
     },
-    drawText: function (x, y, cnt) {
-        var index = this.options.activities.length - cnt / this.longTickDistance;//当前活动索引
+    drawText: function (x, y) {
+        var index = this.curActiIndex;//当前活动索引
 
         this.ctx.textAlign = 'center';
 
@@ -140,7 +197,7 @@ Dial.prototype = {
             this.ctx.strokeText(this.options.activities[index].date, x, y - 16);
 
             //绘制内容
-            this.ctx.strokeText(this.options.activities[index].content, x, y + 40);
+            this.ctx.strokeText(this.options.activities[index].content[0], x, y + 40);
         }
 
     },
