@@ -27,6 +27,12 @@ var Dial = function (node, options) {
     this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.curActiIndex = 0;//当前绘制的活动的索引
 
+    this.isTipShow = false;
+    this.isHighlightShow = false;
+
+    this.highlightIndex = -1;//当前高亮活动索引
+    this.preHighlightIndex = -1;//上一个活动的索引
+
     this.moveLength = 0;//鼠标移动的累加距离
     this.maxAngle = 0;
     this.offsetAngle = 0;//转动时的偏移坐标，初始为0
@@ -114,7 +120,7 @@ Dial.prototype = {
         this.ctx.restore();
     },
     //绘制刻度
-    drawScales: function () {
+    drawScales: function (drawActive) {
         var radius = this.r + this.longTickHeight,
             ANGLE_MAX = this.options.angle + this.auxAngle,//刻度的最大角度
             ANGlE_DELTA = Math.PI / 320,//刻度的间隔
@@ -125,12 +131,12 @@ Dial.prototype = {
         this.ctx.save();
 
         for (var angle = this.auxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.32; angle += ANGlE_DELTA, cnt++) {
-            this.drawScale(angle + this.offsetAngle, radius, cnt++);
+            this.drawScale(angle + this.offsetAngle, radius, cnt++, drawActive);
         }
 
         this.ctx.restore();
     },
-    drawScale: function (angle, radius, cnt) {
+    drawScale: function (angle, radius, cnt, drawActive) {
         if (this.curActiIndex < 0) {
             return;
         }
@@ -183,7 +189,8 @@ Dial.prototype = {
             this.drawDot(
                 circleX + Math.cos(angle) * (radius - tickWidth),
                 circleY + Math.sin(angle) * (radius - tickWidth),
-                r
+                r,
+                drawActive
             );
 
             this.ctx.font = '12px Microsoft Yahei';
@@ -191,15 +198,22 @@ Dial.prototype = {
             this.drawText(
                 circleX + Math.cos(angle) * (radius - tickWidth),
                 circleY + Math.sin(angle) * (radius - tickWidth),
+                drawActive
             );
 
             this.ctx.restore();
         }
     },
-    drawDot: function (x, y, r) {
+    drawDot: function (x, y, r, drawActive) {
         this.ctx.save();
 
-        this.ctx.strokeStyle = 'red';
+        if (this.highlightIndex === this.curActiIndex && drawActive) {
+            this.ctx.strokeStyle = 'red';
+        } else {
+            this.ctx.strokeStyle = 'blue';
+        }
+
+
         this.fillStyle = 'rgba(25, 24, 25, 1)';
         this.ctx.lineWidth = 4;
 
@@ -218,12 +232,18 @@ Dial.prototype = {
         this.ctx.fill();
         this.ctx.restore();
     },
-    drawText: function (x, y) {
+    drawText: function (x, y, drawActive) {
         var index = this.curActiIndex;//当前活动索引
 
         this.ctx.textAlign = 'center';
 
         if (index >= 0 && this.options.activities && index < this.options.activities.length) {
+            this.ctx.save();
+            if (index === this.highlightIndex && drawActive) {
+                this.ctx.strokeStyle = 'black';
+            } else {
+                this.ctx.strokeStyle = 'gray';
+            }
             //绘制日期
             this.ctx.strokeText(this.options.activities[index].date, x, y - 16);
 
@@ -235,6 +255,7 @@ Dial.prototype = {
                 x: x,
                 y: y
             });
+            this.ctx.restore();
         }
 
     },
@@ -295,11 +316,8 @@ Dial.prototype = {
             //这里调整转动的速度
             _this.offsetAngle = -_this.moveLength / 180 * Math.PI / 40;
 
-            //清除区域
-            _this.ctx.clearRect(0, 0, _this.canvas.width, _this.canvas.height);
             //重绘
-            _this.drawArc();//绘制圆弧
-            _this.drawScales();//绘制刻度
+            _this.rePaint();
         }
     },
     handleMouseUp: function () {
@@ -317,8 +335,6 @@ Dial.prototype = {
                 y = e.offsetY,
                 index = -1;
 
-            $('.dial-tip').css('display', 'none');
-
             if (_this.curActiPosition.length > 0) {
                 for (var i = 0; i < _this.curActiPosition.length; i++) {
                     var pos = _this.curActiPosition[i];
@@ -328,21 +344,51 @@ Dial.prototype = {
                         break;
                     }
                 }
-                if (index >= 0) {
-                    var $curTipBox = $('.dial-tip' + index);
+            }
 
-                    $curTipBox.css({
-                        top: pos.y + 20 + 'px',
-                        left: pos.x - 36 + 'px',
-                        display: 'block'
-                    });
-                }
+            if ((index === _this.preHighlightIndex && _this.isTipShow) || (index < 0 && !_this.isTipShow)) {
+                return;
+            }
+
+            if (_this.isTipShow) {
+                $('.dial-tip').css('display', 'none');
+                _this.isTipShow = false;
+            }
+
+            if (_this.isHighlightShow) {
+                _this.isHighlightShow = false;
+            }
+            //重绘
+            _this.rePaint();
+
+            if (index >= 0) {
+
+                _this.preHighlightIndex = _this.highlightIndex;
+                _this.highlightIndex = index;
+
+                //重绘
+                _this.rePaint(true);
+                _this.isTipShow = true;
+                this.isHighlightShow = true;
+
+                var $curTipBox = $('.dial-tip' + index);
+
+                $curTipBox.css({
+                    top: pos.y + 20 + 'px',
+                    left: pos.x - 36 + 'px',
+                    display: 'block'
+                });
             }
         }
+    },
+    rePaint: function (drawActive) {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawArc();//绘制圆弧
+        this.drawScales(drawActive);//绘制刻度
     }
 }
 
-$.fn.createDial = function(options){
+$.fn.createDial = function (options) {
     var $this = $(this);
 
     if ($this.length === 0 || !options || !options.activities) {
