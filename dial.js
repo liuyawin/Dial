@@ -23,31 +23,40 @@ var Dial = function (node, options) {
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
+    this.firstScreenIndex = 0;//第一屏显示的活动索引
+    this.firstScreenOffsetCount = 0;//第一屏显示时偏移的天数
+
+    this.totalDayCount = 0;//总天数
+    this.maxOffsetAngle = 0;
+
+    
     this.activitySpan = [];//两个活动之间间隔的天数
     this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.curActiIndex = 0;//当前绘制的活动的索引
-
+    
     this.isTipShow = false;
     this.isHighlightShow = false;
-
+    
     this.highlightIndex = -1;//当前高亮活动索引
     this.preHighlightIndex = -1;//上一个活动的索引
-
+    
     this.moveLength = 0;//鼠标移动的累加距离
     this.maxAngle = 0;
     this.offsetAngle = 0;//转动时的偏移坐标，初始为0
-
-    this.isLeft = false;//是否已经转到最左边
-
+    
     //长、短刻度的宽高
     this.longTickWidth = 4;
     this.longTickHeight = 18;
     this.shortTickHeight = 10;
-
+    
     this.curActiPosition = [];//当前屏幕上显示的活动及位置
-
+    
     this.longTickDistance = 10;//控制长刻度的距离
 
+    this.options.angle = this.options.angle / 180 * Math.PI;
+
+    this.degreesEachDay = Math.PI / 320 * this.longTickDistance / 2;//一天在转盘上是多少度
+    
     this.init();
 }
 
@@ -58,20 +67,69 @@ Dial.prototype = {
             return;
         }
         this.initActivitySpan();//计算每两个活动之间间隔的天数
-        this.createDial();
-        this.createTipNode();
-        this.bindEvent();
+        this.getFirstScreenIndex();
+        this.getMaxOffsetAngle();
+        this.initOffset();//初始化偏移量，让转盘开始时转到今天
+        this.createDial();//创建转盘
+        this.createTipNode();//创建提示节点
+        this.bindEvent();//绑定事件
+
+        // this.ctx.save();
+        // this.ctx.beginPath();
+        // this.ctx.strokeStyle = 'red';
+        // this.ctx.lineWidth = 4;
+        // this.ctx.arc(
+        //     this.o.x,
+        //     this.o.y,
+        //     this.r,
+        //     0 + Math.PI / 2,
+        //     Math.PI / 320 * this.longTickDistance / 2 + Math.PI / 2
+        // );
+        // this.ctx.stroke();
+        // this.ctx.restore();
     },
     initActivitySpan: function () {
         for (var i = 0; i < this.options.activities.length - 1; i++) {
             var cur = this.options.activities[i];
             var next = this.options.activities[i + 1];
-            this.activitySpan.push(this.getDayCount(cur.date, next.date));
+            var span = this.getDayCount(cur.date, next.date)
+            this.totalDayCount += span;
+            this.activitySpan.push(span);
         }
+    },
+    getFirstScreenIndex: function(){
+        var offsetDayCount = 0;
+        for (var i = 0; i < this.options.activities.length; i++) {
+            var curDate = this.options.activities[i].date;
+            var date = new Date();
+            var curYear = date.getFullYear();
+            
+            var tody = Date.parse(curYear + '-' + (date.getMonth()+1) + '-' + date.getDate());
+
+            var curMonth = curDate.substring(0, curDate.indexOf('月'));
+            var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
+            var formatCur = Date.parse(curYear + '-' + curMonth + '-' + curDay);
+
+            if (formatCur - tody >= 0) {
+                this.firstScreenIndex = i;
+                for (var j = this.activitySpan.length - 1; j > i - 1; j--) {
+                    offsetDayCount += this.activitySpan[j];
+                }
+                this.firstScreenOffsetCount = offsetDayCount;
+                break;
+            }
+        }
+    },
+    initOffset: function(){
+        this.offsetAngle = -Math.PI / 80 * this.firstScreenOffsetCount;
+        this.moveLength = -this.offsetAngle * 180 / Math.PI * 40;
     },
     //获取两个日期之间的天数
     getDayCount: function (curDate, nextDate) {
-        var curYear = (new Date()).getFullYear();
+        var date = new Date();
+        var curYear = date.getFullYear();
+
+        var tody = Date.parse(curYear + '-' + date.getMonth() + '-' + date.getDate());
 
         var curMonth = curDate.substring(0, curDate.indexOf('月'));
         var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
@@ -87,6 +145,9 @@ Dial.prototype = {
 
         return dateCount;
     },
+    getMaxOffsetAngle: function(){
+        this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.options.angle + 2 * this.degreesEachDay;
+    },
     createDial: function () {
         this.calculateRadius();//计算半径
         this.calculateO();//计算圆心坐标
@@ -94,14 +155,12 @@ Dial.prototype = {
         this.drawScales();//绘制刻度
     },
     initParams: function () {
-        this.isLeft = false;
         this.curSpan = 2;
         this.curActiIndex = this.options.activities.length;//当前活动的索引，从最后一个开始
         this.curActiPosition = [];
     },
     calculateRadius: function () {
         this.lineLength = Math.sqrt(Math.pow(this.options.p2.x, 2) + Math.pow(this.options.p2.y - this.options.p1.y, 2));//传入的两点连线的长度
-        this.options.angle = this.options.angle / 180 * Math.PI;
         this.r = this.lineLength / 2 / Math.cos(Math.PI / 2 - this.options.angle / 2);
     },
     calculateO: function () {
@@ -302,20 +361,27 @@ Dial.prototype = {
         var _this = this;
         return function (e) {
 
-            if (_this.offsetAngle > 0 && e.screenX - _this.preX < 0) {//最右边再向右拉时拉不动
+            if (_this.offsetAngle >= 0 && e.screenX - _this.preX < 0) {//最右边再向右拉时拉不动
                 return;
             }
 
-            if (_this.isLeft && e.screenX - _this.preX > 0) {//最左边再向左拉时拉不动
+            if (Math.abs(_this.offsetAngle) >= _this.maxOffsetAngle && e.screenX - _this.preX > 0) {//最左边再向左拉时拉不动
                 return;
             }
 
             _this.moveLength += e.screenX - _this.preX;//鼠标在x方向移动的累计距离
             _this.preX = e.screenX;
-
+            
             //这里调整转动的速度
             _this.offsetAngle = -_this.moveLength / 180 * Math.PI / 40;
+            
+            if (Math.abs(_this.offsetAngle) >= _this.maxOffsetAngle) {
+                _this.offsetAngle = -_this.maxOffsetAngle
+            }
 
+            if (_this.offsetAngle > 0) {
+                _this.offsetAngle = 0;
+            }
             //重绘
             _this.rePaint();
         }
