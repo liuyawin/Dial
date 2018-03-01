@@ -22,6 +22,8 @@ var Dial = function (node, options) {
     this.longTickHeight = 18;
     this.shortTickHeight = 10;
 
+    this.curActiPosition = [];//当前屏幕上显示的活动及位置
+
     this.longTickDistance = 10;//控制长刻度的距离
 
     this.init();
@@ -73,6 +75,7 @@ Dial.prototype = {
         this.isLeft = false;
         this.curSpan = 2;
         this.curActiIndex = this.options.activities.length;//当前活动的索引，从最后一个开始
+        this.curActiPosition = [];
     },
     calculateRadius: function () {
         this.lineLength = Math.sqrt(Math.pow(this.options.p2.x, 2) + Math.pow(this.options.p2.y - this.options.p1.y, 2));//传入的两点连线的长度
@@ -210,6 +213,12 @@ Dial.prototype = {
 
             //绘制内容
             this.ctx.strokeText(this.options.activities[index].content[0], x, y + 40);
+
+            this.curActiPosition.push({
+                index: index,
+                x: x,
+                y: y
+            });
         }
 
     },
@@ -219,26 +228,30 @@ Dial.prototype = {
             var div = $('<div class="dial-tip dial-tip' + i + '"><b class="dial-triangle"></b></div>');
             for (var j = 0; j < activity.content.length; j++) {
                 var content = activity.content[j];
-                var p = $('<p>' + content + '</p>');
-                div.append(p);
+                var a = $('<a>' + content + '</a>');
+                div.append(a);
             }
             this.node.append(div);
         }
     },
     bindEvent: function () {
         this.mouseMoveFunc = this.handleMouseMove.call(this);
-        this.mouseUpFunc = this.handleMouseUp.call(this);
+        this.mouseClickMoveFunc = this.handleMouseClickMove.call(this);//鼠标拖动处理事件
+        this.mouseUpFunc = this.handleMouseUp.call(this);//鼠标抬起处理事件
         this.$canvas.on('mousedown', this.handleMouseDown.call(this));
+        this.$canvas.on('mousemove', this.mouseMoveFunc);
     },
     handleMouseDown: function () {
         var _this = this;
         return function (e) {
             _this.preX = e.screenX;
+            $('.dial-tip').css('display', 'none');
+            _this.$canvas.off('mousemove', _this.mouseMoveFunc);
             $(document).on('mouseup', _this.mouseUpFunc);
-            $(document).on('mousemove', _this.mouseMoveFunc);
+            $(document).on('mousemove', _this.mouseClickMoveFunc);
         }
     },
-    handleMouseMove: function () {
+    handleMouseClickMove: function () {
         var _this = this;
         return function (e) {
 
@@ -266,8 +279,39 @@ Dial.prototype = {
     handleMouseUp: function () {
         var _this = this;
         return function () {
+            _this.$canvas.on('mousemove', _this.mouseMoveFunc);
             $(document).off('mouseup', _this.mouseUpFunc);
-            $(document).off('mousemove', _this.mouseMoveFunc);
+            $(document).off('mousemove', _this.mouseClickMoveFunc);
+        }
+    },
+    handleMouseMove: function(){
+        var _this = this;
+        return function(e){
+            var x = e.offsetX,
+                y = e.offsetY,
+                index = -1;
+
+            $('.dial-tip').css('display', 'none');
+
+            if (_this.curActiPosition.length > 0) {
+                for (var i = 0; i < _this.curActiPosition.length; i++) {
+                    var pos = _this.curActiPosition[i];
+   
+                    if (Math.abs(pos.x - x) < 20 && Math.abs(pos.y - y) < 20) {
+                        index = _this.options.activities.length - 1 - i;
+                        break;
+                    }
+                }
+                if (index >= 0) {
+                    var $curTipBox = $('.dial-tip' + index);
+
+                    $curTipBox.css({
+                        top: pos.y + 20 + 'px',
+                        left: pos.x - 36 + 'px',
+                        display: 'block'
+                    });
+                }
+            }
         }
     }
 }
