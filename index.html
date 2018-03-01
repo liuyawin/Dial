@@ -22,6 +22,7 @@
 
         .dial-tip {
             position: absolute;
+            min-width: 160px;
             padding: 12px;
             background-color: red;
             border-radius: 4px;
@@ -39,7 +40,20 @@
             border-color: transparent transparent red;
         }
 
-        .dial-tip a {
+        .dial-tip img{
+            float: left;
+            width: 58px;
+            height: 58px;
+            border: 1px solid gray;
+            border-radius: 29px;
+        }
+
+        .dial-tip .contents{
+            float: left;
+            margin: 0 0 0 12px;
+        }
+
+        .dial-tip .contents a {
             display: block;
             color: white;
         }
@@ -50,8 +64,6 @@
             top: 4980px;
             left: 2266px;
         }
-
-        #canvas {}
     </style>
 </head>
 
@@ -75,71 +87,88 @@
             activities: [
                 {
                     date: '2月22日',
-                    content: ['战略发布会']
+                    content: ['战略发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '2月24日',
-                    content: ['新游戏发布会', '记者会']
+                    content: ['新游戏发布会', '记者会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '2月26日',
-                    content: ['线上交流会']
+                    content: ['线上交流会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '2月27日',
-                    content: ['什么时代']
+                    content: ['什么时代'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '2月28日',
-                    content: ['新闻发布会']
+                    content: ['新闻发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月1日',
-                    content: ['战略发布会']
+                    content: ['战略发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月2日',
-                    content: ['新游戏发布会', '记者会']
+                    content: ['新游戏发布会', '记者会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月5日',
-                    content: ['线上交流会']
+                    content: ['线上交流会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月6日',
-                    content: ['什么时代']
+                    content: ['什么时代'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月7日',
-                    content: ['新闻发布会']
+                    content: ['新闻发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月11日',
-                    content: ['记者会', '哈啊哈记者会', '党员大会活动']
+                    content: ['记者会', '哈啊哈记者会', '党员大会活动'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月12日',
-                    content: ['哈啊哈记者会']
+                    content: ['哈啊哈记者会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月14日',
-                    content: ['线上交流会']
+                    content: ['线上交流会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月16日',
-                    content: ['这是什么']
+                    content: ['这是什么'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月20日',
-                    content: ['新闻发布会']
+                    content: ['新闻发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
                 {
                     date: '3月22日',
-                    content: ['记者会']
+                    content: ['记者会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 }
             ]
         }
-        var dial = new Dial($('#dial'), options);
+        
+        $('#dial').createDial(options);
     </script>
 </body>
 

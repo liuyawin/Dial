@@ -1,4 +1,20 @@
 var Dial = function (node, options) {
+    if (node === 0 || !options || !options.activities) {
+        return;
+    }
+
+    options = $.extend({
+        p1: {
+            x: 0,
+            y: 200
+        },
+        p2: {
+            x: 640,
+            y: 100
+        },
+        angle: 30
+    }, options);
+
     this.node = node;
     this.$canvas = node.find('canvas');
     this.canvas = this.$canvas[0];
@@ -226,11 +242,21 @@ Dial.prototype = {
         for (var i = 0; i < this.options.activities.length; i++) {
             var activity = this.options.activities[i];
             var div = $('<div class="dial-tip dial-tip' + i + '"><b class="dial-triangle"></b></div>');
+
+            if (activity.img && activity.img.length > 0) {
+                var img = $('<img src="' + activity.img + '"/>');
+                div.append(img);
+            }
+
+            var contentContainDiv = $('<div class="contents"></div>')
+
             for (var j = 0; j < activity.content.length; j++) {
                 var content = activity.content[j];
                 var a = $('<a>' + content + '</a>');
-                div.append(a);
+                contentContainDiv.append(a);
             }
+
+            div.append(contentContainDiv);
             this.node.append(div);
         }
     },
@@ -284,9 +310,9 @@ Dial.prototype = {
             $(document).off('mousemove', _this.mouseClickMoveFunc);
         }
     },
-    handleMouseMove: function(){
+    handleMouseMove: function () {
         var _this = this;
-        return function(e){
+        return function (e) {
             var x = e.offsetX,
                 y = e.offsetY,
                 index = -1;
@@ -296,7 +322,7 @@ Dial.prototype = {
             if (_this.curActiPosition.length > 0) {
                 for (var i = 0; i < _this.curActiPosition.length; i++) {
                     var pos = _this.curActiPosition[i];
-   
+
                     if (Math.abs(pos.x - x) < 20 && Math.abs(pos.y - y) < 20) {
                         index = _this.options.activities.length - 1 - i;
                         break;
@@ -314,4 +340,26 @@ Dial.prototype = {
             }
         }
     }
+}
+
+$.fn.createDial = function(options){
+    var $this = $(this);
+
+    if ($this.length === 0 || !options || !options.activities) {
+        return;
+    }
+
+    options = $.extend({
+        p1: {
+            x: 0,
+            y: 200
+        },
+        p2: {
+            x: 640,
+            y: 100
+        },
+        angle: 30
+    }, options);
+
+    var dial = new Dial($this, options);
 }
