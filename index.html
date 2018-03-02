@@ -13,11 +13,12 @@
         }
 
         #dial {
-            width: 640px;
-            height: 320px;
+            width: 1000px;
+            height: 560px;
             border: 1px solid blue;
             margin: 32px auto;
             position: relative;
+            overflow: hidden;
         }
 
         .dial-tip {
@@ -40,7 +41,7 @@
             border-color: transparent transparent red;
         }
 
-        .dial-tip img{
+        .dial-tip img {
             float: left;
             width: 58px;
             height: 58px;
@@ -48,7 +49,7 @@
             border-radius: 29px;
         }
 
-        .dial-tip .contents{
+        .dial-tip .contents {
             float: left;
             margin: 0 0 0 12px;
         }
@@ -57,19 +58,12 @@
             display: block;
             color: white;
         }
-
-        #bg {
-            width: 640px;
-            position: absolute;
-            top: 4980px;
-            left: 2266px;
-        }
     </style>
 </head>
 
 <body>
     <div id="dial">
-        <canvas id="canvas" width="640px" height="320px"></canvas>
+        <canvas id="canvas"></canvas>
     </div>
     <script src="jquery-1.11.3.min.js"></script>
     <script src="dial.js"></script>
@@ -77,14 +71,29 @@
         var options = {
             p1: {
                 x: 0,
-                y: 200
+                y: 400
             },
             p2: {
-                x: 640,
-                y: 100
+                x: 1000,
+                y: 240
             },
             angle: 30,
             activities: [
+                {
+                    date: '2月25日',
+                    content: ['战略发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                },
+                {
+                    date: '2月28日',
+                    content: ['战略发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                },
+                {
+                    date: '3月1日',
+                    content: ['战略发布会'],
+                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                },
                 {
                     date: '3月5日',
                     content: ['战略发布会'],
@@ -125,29 +134,29 @@
                     content: ['线上交流会'],
                     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
                 },
-                {
-                    date: '3月26日',
-                    content: ['这是什么'],
-                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
-                },
-                {
-                    date: '3月30日',
-                    content: ['新闻发布会'],
-                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
-                },
-                {
-                    date: '4月2日',
-                    content: ['记者会'],
-                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
-                },
-                {
-                    date: '6月22日',
-                    content: ['战略发布会'],
-                    img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
-                }
+                // {
+                //     date: '3月26日',
+                //     content: ['这是什么'],
+                //     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                // },
+                // {
+                //     date: '3月30日',
+                //     content: ['新闻发布会'],
+                //     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                // },
+                // {
+                //     date: '4月2日',
+                //     content: ['记者会'],
+                //     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                // },
+                // {
+                //     date: '6月22日',
+                //     content: ['战略发布会'],
+                //     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg'
+                // }
             ]
         }
-        
+
         $('#dial').createDial(options);
     </script>
 </body>

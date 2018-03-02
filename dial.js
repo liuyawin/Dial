@@ -18,8 +18,15 @@ var Dial = function (node, options) {
     this.node = node;
     this.$canvas = node.find('canvas');
     this.canvas = this.$canvas[0];
-    this.options = options;
     this.ctx = canvas.getContext('2d');
+
+    this.$canvas.attr({
+        width: this.$canvas.parent().css('width'),
+        height: this.$canvas.parent().css('height')
+    });
+
+    this.options = options;
+    
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
@@ -27,36 +34,48 @@ var Dial = function (node, options) {
     this.firstScreenOffsetCount = 0;//第一屏显示时偏移的天数
 
     this.totalDayCount = 0;//总天数
-    this.maxOffsetAngle = 0;
+    this.maxOffsetAngle = 0;//最大偏移角度
 
-    
     this.activitySpan = [];//两个活动之间间隔的天数
-    this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.curActiIndex = 0;//当前绘制的活动的索引
-    
+
     this.isTipShow = false;
     this.isHighlightShow = false;
-    
+
     this.highlightIndex = -1;//当前高亮活动索引
-    this.preHighlightIndex = -1;//上一个活动的索引
-    
+    this.preHighlightIndex = -1;//上一个高亮活动的索引
+
     this.moveLength = 0;//鼠标移动的累加距离
-    this.maxAngle = 0;
-    this.offsetAngle = 0;//转动时的偏移坐标，初始为0
-    
-    //长、短刻度的宽高
-    this.longTickWidth = 4;
-    this.longTickHeight = 18;
-    this.shortTickHeight = 10;
-    
+    this.offsetAngle = 0;//转动时的偏移角度，初始为0
     this.curActiPosition = [];//当前屏幕上显示的活动及位置
-    
-    this.longTickDistance = 10;//控制长刻度的距离
 
     this.options.angle = this.options.angle / 180 * Math.PI;
 
-    this.degreesEachDay = Math.PI / 320 * this.longTickDistance / 2;//一天在转盘上是多少度
-    
+    //----------------以下为可配置选项--------------
+
+    this.longTickWidth = 4;//长刻度宽
+    this.longTickHeight = 18;//长刻度高
+    this.middleTickHeight = 10;//中长刻度高
+    this.shortTickHeight = 6;//短刻度高
+
+    this.velocity = 40;//调整转动的速度
+
+    this.dotRadius = 5;//小圆点的半径
+    this.dotLineWidth = 4;//小圆点的线宽
+    this.dotStrokeStyle = 'blue';
+    this.activeDotStrokeStyle = 'red';
+    this.dotFillStyle = 'rgba(25, 24, 25, 1)';
+
+    this.font = '12px Microsoft Yahei';
+
+    this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
+    this.ANGlE_DELTA = Math.PI / 1000;//小刻度之间的间距
+
+    this.longTickDistance = 20;//控制长刻度的距离
+    this.degreesEachDay = this.ANGlE_DELTA * this.longTickDistance / 2;//一天在转盘上是多少度
+
+    console.log(Math.PI * 2 / this.degreesEachDay)
+
     this.init();
 }
 
@@ -83,7 +102,7 @@ Dial.prototype = {
         //     this.o.y,
         //     this.r,
         //     0 + Math.PI / 2,
-        //     Math.PI / 320 * this.longTickDistance / 2 + Math.PI / 2
+        //     this.ANGlE_DELTA * this.longTickDistance / 2 + Math.PI / 2
         // );
         // this.ctx.stroke();
         // this.ctx.restore();
@@ -97,14 +116,14 @@ Dial.prototype = {
             this.activitySpan.push(span);
         }
     },
-    getFirstScreenIndex: function(){
-        var offsetDayCount = 0;
-        for (var i = 0; i < this.options.activities.length; i++) {
+    getFirstScreenIndex: function () {
+        var i = 0;
+        for (i = 0; i < this.options.activities.length; i++) {
             var curDate = this.options.activities[i].date;
             var date = new Date();
             var curYear = date.getFullYear();
-            
-            var tody = Date.parse(curYear + '-' + (date.getMonth()+1) + '-' + date.getDate());
+
+            var tody = Date.parse(curYear + '-' + (date.getMonth() + 1) + '-' + date.getDate());
 
             var curMonth = curDate.substring(0, curDate.indexOf('月'));
             var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
@@ -112,17 +131,23 @@ Dial.prototype = {
 
             if (formatCur - tody >= 0) {
                 this.firstScreenIndex = i;
-                for (var j = this.activitySpan.length - 1; j > i - 1; j--) {
-                    offsetDayCount += this.activitySpan[j];
-                }
-                this.firstScreenOffsetCount = offsetDayCount;
                 break;
             }
         }
     },
-    initOffset: function(){
-        this.offsetAngle = -Math.PI / 80 * this.firstScreenOffsetCount;
-        this.moveLength = -this.offsetAngle * 180 / Math.PI * 40;
+    initOffset: function () {
+        //计算初始偏移天数
+        for (var i = this.activitySpan.length - 1; i > this.firstScreenIndex - 1; i--) {
+            this.firstScreenOffsetCount += this.activitySpan[i];
+        }
+
+        //计算初始偏移角度
+        this.offsetAngle = -(this.degreesEachDay * this.firstScreenOffsetCount - this.options.angle / 2 + this.degreesEachDay);
+
+        if (Math.abs(this.offsetAngle) > Math.abs(this.maxOffsetAngle)) {
+            this.offsetAngle = -this.maxOffsetAngle;
+        }
+        this.moveLength = -this.offsetAngle * 180 / Math.PI * this.velocity;
     },
     //获取两个日期之间的天数
     getDayCount: function (curDate, nextDate) {
@@ -145,7 +170,7 @@ Dial.prototype = {
 
         return dateCount;
     },
-    getMaxOffsetAngle: function(){
+    getMaxOffsetAngle: function () {
         this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.options.angle + 2 * this.degreesEachDay;
     },
     createDial: function () {
@@ -182,14 +207,14 @@ Dial.prototype = {
     drawScales: function (drawActive) {
         var radius = this.r + this.longTickHeight,
             ANGLE_MAX = this.options.angle + this.auxAngle,//刻度的最大角度
-            ANGlE_DELTA = Math.PI / 320,//刻度的间隔
+            ANGlE_DELTA = this.ANGlE_DELTA,//刻度的间隔
             tickWidth;
 
         this.initParams();//重置相关参数
 
         this.ctx.save();
 
-        for (var angle = this.auxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.32; angle += ANGlE_DELTA, cnt++) {
+        for (var angle = this.auxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.2; angle += ANGlE_DELTA, cnt++) {
             this.drawScale(angle + this.offsetAngle, radius, cnt++, drawActive);
         }
 
@@ -202,18 +227,26 @@ Dial.prototype = {
 
         var circleX = this.o.x;
         var circleY = this.o.y;
+        var isLong = cnt % this.longTickDistance === 0;
 
         var r = 0;//小圆半径
 
-        var isLong = cnt % this.longTickDistance === 0;
-        var tickWidth = isLong ? this.longTickHeight : this.shortTickHeight,
-            radius = isLong ? radius : radius - this.longTickHeight + this.shortTickHeight;
+        if (isLong) {
+            tickHeight = this.longTickHeight;
+            radius = radius;
+        } else if (cnt * 2 % this.longTickDistance === 0) {
+            tickHeight = this.middleTickHeight;
+            radius = radius - this.longTickHeight + this.middleTickHeight;
+        } else {
+            tickHeight = this.shortTickHeight;
+            radius = radius - this.longTickHeight + this.shortTickHeight;
+        }
 
         //绘制刻度线
         this.ctx.beginPath();
         this.ctx.moveTo(
-            circleX + Math.cos(angle) * (radius - tickWidth - r),
-            circleY + Math.sin(angle) * (radius - tickWidth - r)
+            circleX + Math.cos(angle) * (radius - tickHeight - r),
+            circleY + Math.sin(angle) * (radius - tickHeight - r)
         );
 
         this.ctx.lineTo(
@@ -241,22 +274,22 @@ Dial.prototype = {
             }
 
             //绘制小圆圈
-            r = 4;
+            r = this.dotRadius;
             this.ctx.save();
             this.ctx.lineWidth = 1;
             this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
             this.drawDot(
-                circleX + Math.cos(angle) * (radius - tickWidth),
-                circleY + Math.sin(angle) * (radius - tickWidth),
+                circleX + Math.cos(angle) * (radius - tickHeight),
+                circleY + Math.sin(angle) * (radius - tickHeight),
                 r,
                 drawActive
             );
 
-            this.ctx.font = '12px Microsoft Yahei';
+            this.ctx.font = this.font;
             //绘制文本
             this.drawText(
-                circleX + Math.cos(angle) * (radius - tickWidth),
-                circleY + Math.sin(angle) * (radius - tickWidth),
+                circleX + Math.cos(angle) * (radius - tickHeight),
+                circleY + Math.sin(angle) * (radius - tickHeight),
                 drawActive
             );
 
@@ -267,14 +300,13 @@ Dial.prototype = {
         this.ctx.save();
 
         if (this.highlightIndex === this.curActiIndex && drawActive) {
-            this.ctx.strokeStyle = 'red';
+            this.ctx.strokeStyle = this.activeDotStrokeStyle;
         } else {
-            this.ctx.strokeStyle = 'blue';
+            this.ctx.strokeStyle = this.dotStrokeStyle;
         }
 
-
-        this.fillStyle = 'rgba(25, 24, 25, 1)';
-        this.ctx.lineWidth = 4;
+        this.fillStyle = this.dotFillStyle;
+        this.ctx.lineWidth = this.dotLineWidth;
 
         this.ctx.beginPath();
 
@@ -371,10 +403,10 @@ Dial.prototype = {
 
             _this.moveLength += e.screenX - _this.preX;//鼠标在x方向移动的累计距离
             _this.preX = e.screenX;
-            
+
             //这里调整转动的速度
-            _this.offsetAngle = -_this.moveLength / 180 * Math.PI / 40;
-            
+            _this.offsetAngle = -_this.moveLength / 180 * Math.PI / _this.velocity;
+
             if (Math.abs(_this.offsetAngle) >= _this.maxOffsetAngle) {
                 _this.offsetAngle = -_this.maxOffsetAngle
             }
