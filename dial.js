@@ -20,6 +20,10 @@ var Dial = function (node, options) {
     this.canvas = this.$canvas[0];
     this.ctx = canvas.getContext('2d');
 
+    this.preBtn = options.preBtn;
+    this.nextBtn = options.nextBtn;
+    this.span = options.span;
+
     this.$canvas.attr({
         width: this.$canvas.parent().css('width'),
         height: this.$canvas.parent().css('height')
@@ -338,7 +342,7 @@ Dial.prototype = {
             this.ctx.strokeText(this.options.activities[index].date, x, y - 16);
 
             //绘制内容
-            this.ctx.strokeText(this.options.activities[index].content[0], x, y + 50);
+            // this.ctx.strokeText(this.options.activities[index].content[0], x, y + 50);
 
             this.curActiPosition.push({
                 index: index,
@@ -377,7 +381,11 @@ Dial.prototype = {
         this.mouseUpFunc = this.handleMouseUp.call(this);//鼠标抬起处理事件
         this.$canvas.on('mousedown', this.handleMouseDown.call(this));
         this.$canvas.on('mousemove', this.mouseMoveFunc);
+        this.$canvas.on('mouseleave', this.handleMouseLeave.call(this));
         this.$canvas.on('click', this.handleMouseClick.call(this));
+
+        this.preBtn.on('click', this.handleScroolRight.call(this));
+        this.nextBtn.on('click', this.handleScroolLeftt.call(this));
     },
     handleMouseDown: function () {
         var _this = this;
@@ -472,11 +480,26 @@ Dial.prototype = {
                 var $curTipBox = $('.dial-tip' + index);
 
                 $curTipBox.css({
-                    top: pos.y + 20 + 'px',
-                    left: pos.x - 36 + 'px',
+                    top: pos.y + 40 + 'px',
+                    left: pos.x - 40 + 'px',
                     display: 'block'
                 });
             }
+        }
+    },
+    handleMouseLeave: function(){
+        var _this = this;
+        return function(){
+            if (_this.isTipShow) {
+                $('.dial-tip').css('display', 'none');
+                _this.isTipShow = false;
+            }
+    
+            if (_this.isHighlightShow) {
+                _this.isHighlightShow = false;
+            }
+            //重绘
+            _this.rePaint();
         }
     },
     handleMouseClick: function () {
@@ -519,6 +542,40 @@ Dial.prototype = {
             }
         }
         return index;
+    },
+    handleScroolRight: function () {
+        var _this = this;
+        return function () {
+            _this.offsetAngle -= _this.span * _this.degreesEachDay;
+
+            if (Math.abs(_this.offsetAngle) > Math.abs(_this.maxOffsetAngle)) {
+                _this.offsetAngle = -_this.maxOffsetAngle;
+            }
+            if (_this.offsetAngle > 0) {
+                _this.offsetAngle = 0;
+            }
+
+            _this.moveLength = -_this.offsetAngle * 180 / Math.PI * _this.velocity;
+
+            _this.rePaint();
+        }
+    },
+    handleScroolLeftt: function () {
+        var _this = this;
+        return function () {
+            _this.offsetAngle += _this.span * _this.degreesEachDay;
+
+            if (Math.abs(_this.offsetAngle) > Math.abs(_this.maxOffsetAngle)) {
+                _this.offsetAngle = -_this.maxOffsetAngle;
+            }
+            if (_this.offsetAngle > 0) {
+                _this.offsetAngle = 0;
+            }
+
+            _this.moveLength = -_this.offsetAngle * 180 / Math.PI * _this.velocity;
+
+            _this.rePaint();
+        }
     },
     rePaint: function (drawActive) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);

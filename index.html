@@ -13,7 +13,7 @@
         }
 
         #dial {
-            width: 1920px;
+            width: 1000px;
             height: 560px;
             margin: 32px auto;
             position: relative;
@@ -23,40 +23,45 @@
 
         .dial-tip {
             position: absolute;
-            min-width: 160px;
-            padding: 12px;
-            background-color: red;
-            border-radius: 4px;
+            width: 252px;
+            height: 62px;
+            padding: 7px 8px;
+            background-color: #862125;
             display: none;
         }
 
         .dial-tip .dial-triangle {
             position: absolute;
-            top: -8px;
+            top: -10px;
             left: 30px;
             width: 0;
             height: 0;
-            border-width: 0 8px 8px;
+            border-width: 0 10px 10px;
             border-style: dashed dashed solid;
-            border-color: transparent transparent red;
+            border-color: transparent transparent #862125;
         }
 
         .dial-tip img {
             float: left;
-            width: 58px;
-            height: 58px;
+            width: 62px;
+            height: 62px;
             border: 1px solid gray;
-            border-radius: 29px;
+            border-radius: 31px;
         }
 
         .dial-tip .contents {
             float: left;
-            margin: 0 0 0 12px;
+            margin: 10px 0 0 16px;
         }
 
         .dial-tip .contents a {
             display: block;
             color: white;
+        }
+
+        .btn-group{
+            width: 120px;
+            float: right;
         }
     </style>
 </head>
@@ -65,6 +70,11 @@
     <div id="dial">
         <canvas id="canvas"></canvas>
     </div>
+    <div class="btn-group">
+        <button id="preBtn">前进</button>
+        <button id="nextBtn">后退</button>
+    </div>
+    
     <script src="jquery-1.11.3.min.js"></script>
     <script src="dial.js"></script>
     <script>
@@ -74,10 +84,13 @@
                 y: 400
             },
             p2: {
-                x: 1920,
+                x: 1000,
                 y: 240
             },
             angle: 30,
+            preBtn: $('#preBtn'),
+            nextBtn: $('#nextBtn'),
+            span: 10,
             activities: [
                 {
                     date: '2月2日',
@@ -181,7 +194,7 @@
                     img: 'http://attach10.92wy.com/images/2012/1018/1350525836ba6f2f70.jpg',
                     src: 'https://www.baidu.com'
                 }
-            ]
+            ] 
         }
 
         $('#dial').createDial(options);
