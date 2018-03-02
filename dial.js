@@ -26,7 +26,7 @@ var Dial = function (node, options) {
     });
 
     this.options = options;
-    
+
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
@@ -53,20 +53,25 @@ var Dial = function (node, options) {
 
     //----------------以下为可配置选项--------------
 
-    this.longTickWidth = 4;//长刻度宽
-    this.longTickHeight = 18;//长刻度高
-    this.middleTickHeight = 10;//中长刻度高
-    this.shortTickHeight = 6;//短刻度高
+    this.longTickWidth = 5;//长刻度宽
+    this.longTickHeight = 30;//长刻度高
+    this.middleTickWidth = 4;
+    this.middleTickHeight = 20;//中长刻度高
+    this.shortTickWidth = 1;
+    this.shortTickHeight = 10;//短刻度高
 
     this.velocity = 40;//调整转动的速度
 
     this.dotRadius = 5;//小圆点的半径
     this.dotLineWidth = 4;//小圆点的线宽
-    this.dotStrokeStyle = 'blue';
-    this.activeDotStrokeStyle = 'red';
-    this.dotFillStyle = 'rgba(25, 24, 25, 1)';
+    this.dotStrokeStyle = 'rgba(108,199,136,1)';
+    this.activeDotStrokeStyle = 'rgba(255,0,0,1)';
+    this.dotFillStyle = 'rgba(0, 0, 0, 1)';
 
-    this.font = '12px Microsoft Yahei';
+    this.activeTextColor = 'rgba(255,255,255,1)';
+    this.textColor = 'rgba(255,255,255,0.3)';
+
+    this.font = 'normal normal lighter 14px Microsoft Yahei';
 
     this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.ANGlE_DELTA = Math.PI / 1000;//小刻度之间的间距
@@ -92,20 +97,6 @@ Dial.prototype = {
         this.createDial();//创建转盘
         this.createTipNode();//创建提示节点
         this.bindEvent();//绑定事件
-
-        // this.ctx.save();
-        // this.ctx.beginPath();
-        // this.ctx.strokeStyle = 'red';
-        // this.ctx.lineWidth = 4;
-        // this.ctx.arc(
-        //     this.o.x,
-        //     this.o.y,
-        //     this.r,
-        //     0 + Math.PI / 2,
-        //     this.ANGlE_DELTA * this.longTickDistance / 2 + Math.PI / 2
-        // );
-        // this.ctx.stroke();
-        // this.ctx.restore();
     },
     initActivitySpan: function () {
         for (var i = 0; i < this.options.activities.length - 1; i++) {
@@ -147,6 +138,10 @@ Dial.prototype = {
         if (Math.abs(this.offsetAngle) > Math.abs(this.maxOffsetAngle)) {
             this.offsetAngle = -this.maxOffsetAngle;
         }
+        if (this.offsetAngle > 0) {
+            this.offsetAngle = 0;
+        }
+
         this.moveLength = -this.offsetAngle * 180 / Math.PI * this.velocity;
     },
     //获取两个日期之间的天数
@@ -197,8 +192,8 @@ Dial.prototype = {
     },
     drawArc: function () {
         this.ctx.save();
-        this.ctx.strokeStyle = 'gray';
-        this.ctx.lineWidth = 1;
+        this.ctx.strokeStyle = 'rgba(69,72,80,1)';
+        this.ctx.lineWidth = 2;
         this.ctx.arc(this.o.x, this.o.y, this.r, Math.PI / 2 + this.auxAngle, Math.PI / 2 + this.auxAngle + this.options.angle, true);
         this.ctx.stroke();
         this.ctx.restore();
@@ -207,8 +202,7 @@ Dial.prototype = {
     drawScales: function (drawActive) {
         var radius = this.r + this.longTickHeight,
             ANGLE_MAX = this.options.angle + this.auxAngle,//刻度的最大角度
-            ANGlE_DELTA = this.ANGlE_DELTA,//刻度的间隔
-            tickWidth;
+            ANGlE_DELTA = this.ANGlE_DELTA;//刻度的间隔
 
         this.initParams();//重置相关参数
 
@@ -228,17 +222,21 @@ Dial.prototype = {
         var circleX = this.o.x;
         var circleY = this.o.y;
         var isLong = cnt % this.longTickDistance === 0;
+        var tickHeight, tickWidth;
 
         var r = 0;//小圆半径
 
         if (isLong) {
             tickHeight = this.longTickHeight;
+            tickWidth = this.longTickWidth;
             radius = radius;
         } else if (cnt * 2 % this.longTickDistance === 0) {
             tickHeight = this.middleTickHeight;
+            tickWidth = this.middleTickWidth;
             radius = radius - this.longTickHeight + this.middleTickHeight;
         } else {
             tickHeight = this.shortTickHeight;
+            tickWidth = this.shortTickWidth;
             radius = radius - this.longTickHeight + this.shortTickHeight;
         }
 
@@ -255,7 +253,7 @@ Dial.prototype = {
         );
 
         this.ctx.save();
-        this.ctx.lineWidth = isLong ? this.longTickWidth : 1;
+        this.ctx.lineWidth = tickWidth;
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         this.ctx.stroke();
         this.ctx.restore();
@@ -327,19 +325,20 @@ Dial.prototype = {
         var index = this.curActiIndex;//当前活动索引
 
         this.ctx.textAlign = 'center';
+        this.ctx.lineWidth = 1;
 
         if (index >= 0 && this.options.activities && index < this.options.activities.length) {
             this.ctx.save();
             if (index === this.highlightIndex && drawActive) {
-                this.ctx.strokeStyle = 'black';
+                this.ctx.strokeStyle = this.activeTextColor;
             } else {
-                this.ctx.strokeStyle = 'gray';
+                this.ctx.strokeStyle = this.textColor;
             }
             //绘制日期
             this.ctx.strokeText(this.options.activities[index].date, x, y - 16);
 
             //绘制内容
-            this.ctx.strokeText(this.options.activities[index].content[0], x, y + 40);
+            this.ctx.strokeText(this.options.activities[index].content[0], x, y + 50);
 
             this.curActiPosition.push({
                 index: index,
@@ -378,6 +377,7 @@ Dial.prototype = {
         this.mouseUpFunc = this.handleMouseUp.call(this);//鼠标抬起处理事件
         this.$canvas.on('mousedown', this.handleMouseDown.call(this));
         this.$canvas.on('mousemove', this.mouseMoveFunc);
+        this.$canvas.on('click', this.handleMouseClick.call(this));
     },
     handleMouseDown: function () {
         var _this = this;
@@ -478,6 +478,47 @@ Dial.prototype = {
                 });
             }
         }
+    },
+    handleMouseClick: function () {
+        var _this = this;
+        return function (e) {
+            var x = e.offsetX,
+                y = e.offsetY,
+                index = -1;
+
+            if (_this.curActiPosition.length > 0) {
+                for (var i = 0; i < _this.curActiPosition.length; i++) {
+                    var pos = _this.curActiPosition[i];
+
+                    if (Math.abs(pos.x - x) < 20 && Math.abs(pos.y - y) < 20) {
+                        index = _this.options.activities.length - 1 - i;
+                        break;
+                    }
+                }
+            }
+
+            if (index > 0) {
+                var src = _this.options.activities[index].src;
+                if (src.length > 0) {
+                    window.location.href = src;
+                }
+            }
+        }
+    },
+    //确定事件的目标是哪个活动
+    checkMouseActiIndex: function (x, y) {
+        var index = -1;
+        if (this.curActiPosition.length > 0) {
+            for (var i = 0; i < this.curActiPosition.length; i++) {
+                var pos = this.curActiPosition[i];
+
+                if (Math.abs(pos.x - x) < 20 && Math.abs(pos.y - y) < 20) {
+                    index = this.options.activities.length - 1 - i;
+                    break;
+                }
+            }
+        }
+        return index;
     },
     rePaint: function (drawActive) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
