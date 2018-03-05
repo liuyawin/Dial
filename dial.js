@@ -64,7 +64,7 @@ var Dial = function (node, options) {
     this.options.angle = this.options.angle / 180 * Math.PI;
 
     //----------------以下为可配置选项--------------
-    this.tickColor = 'rgba(69,72,80,1)';//弧线和刻度颜色
+    this.tickColor = 'rgba(157,173,208,1)';//弧线和刻度颜色
 
     this.longTickWidth = 5;//长刻度宽
     this.longTickHeight = 30;//长刻度高
@@ -151,7 +151,6 @@ Dial.prototype = {
     },
     //通过活动索引获将该活动转到屏幕中间所需要的取偏移角度
     getAngleByActiIndex: function (index) {
-        console.log(index)
         var angle = 0;
         var dayCount = 0;
         //计算初始偏移天数
@@ -221,8 +220,8 @@ Dial.prototype = {
 
                 _this.blinkNode.css({
                     position: 'absolute',
-                    left: _this.curActiPosition[index].x - 4 + 'px',
-                    top: _this.curActiPosition[index].y + 36 + 'px'
+                    left: _this.curActiPosition[index].x - 6 + 'px',
+                    top: _this.curActiPosition[index].y + 40 + 'px'
                 });
 
                 _this.blinkInterval = setInterval(function () {//闪烁动画
@@ -440,6 +439,7 @@ Dial.prototype = {
         this.$canvas.on('mousemove', this.mouseMoveFunc);
         this.$canvas.on('mouseleave', this.handleMouseLeave.call(this));
         this.$canvas.on('click', this.handleMouseClick.call(this));
+        this.$canvas.dial_mouseWheel(this.handleMouseWheelMove.call(this));
 
         this.preBtn.on('click', this.handleScroolRight.call(this));
         this.nextBtn.on('click', this.handleScroolLeft.call(this));
@@ -596,6 +596,48 @@ Dial.prototype = {
                 if (src.length > 0) {
                     window.location.href = src;
                 }
+            }
+        }
+    },
+    handleMouseWheelMove: function(){
+        var _this = this;
+
+        return function(delta){
+            if (_this.isMoving) {
+                return;
+            }
+
+            if (_this.isBlinkShow) {
+                clearInterval(_this.blinkInterval);
+                _this.blinkNode.fadeOut(0);
+                _this.isBlinkShow = false;
+            }
+
+            $('.dial-tip').fadeOut(0);
+
+            var targetAngle = 0;
+
+            if (delta > 0) {
+                targetAngle = _this.offsetAngle + _this.degreesEachDay * 2;
+
+                if (Math.abs(targetAngle) > Math.abs(_this.maxOffsetAngle)) {
+                    targetAngle = -_this.maxOffsetAngle;
+                }
+                if (targetAngle > 0) {
+                    targetAngle = 0;
+                }
+                _this.circleAnimate(targetAngle, 'LEFT');
+            } else {
+                targetAngle = _this.offsetAngle - _this.degreesEachDay * 2;
+
+                if (Math.abs(targetAngle) > Math.abs(_this.maxOffsetAngle)) {
+                    targetAngle = -_this.maxOffsetAngle;
+                }
+                if (targetAngle > 0) {
+                    targetAngle = 0;
+                }
+
+                _this.circleAnimate(targetAngle, 'RIGHT');
             }
         }
     },

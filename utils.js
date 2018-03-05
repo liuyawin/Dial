@@ -63,6 +63,7 @@ $.fn.dial_mouseWheel = function(fn){
     function wheelFn(e){
         e = e || window.event;
         e.delta = (e.wheelDelta) ? e.wheelDelta / 120 : -(e.detail || 0) / 3;
+
         if(typeof fn == 'function'){
             fn(e.delta);
         }
