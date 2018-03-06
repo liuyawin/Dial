@@ -41,7 +41,6 @@ var Dial = function (node, options) {
 
     this.blinkNode = null;//开始时的闪烁节点
     this.isBlinkShow = true;
-    this.blinkInterval = null;//闪烁动画interval
 
     this.totalDayCount = 0;//总天数
     this.maxOffsetAngle = 0;//最大偏移角度
@@ -92,7 +91,10 @@ var Dial = function (node, options) {
     this.longTickDistance = 20;//控制长刻度的距离
     this.degreesEachDay = this.ANGlE_DELTA * this.longTickDistance / 2;//一天在转盘上是多少度
 
-    console.log(Math.PI * 2 / this.degreesEachDay)
+    this.isLeft = false;//是否在最左边
+    this.isRight = false;//是否在最右边
+
+    // console.log(Math.PI * 2 / this.degreesEachDay)//查看总共能显示多少天
 
     this.init();
 }
@@ -221,12 +223,11 @@ Dial.prototype = {
                 _this.blinkNode.css({
                     position: 'absolute',
                     left: _this.curActiPosition[index].x - 6 + 'px',
-                    top: _this.curActiPosition[index].y + 40 + 'px'
+                    top: _this.curActiPosition[index].y + 40 + 'px',
+                    display: 'none'
                 });
 
-                _this.blinkInterval = setInterval(function () {//闪烁动画
-                    _this.blinkNode.toggle();
-                }, 500);
+                _this.blinkNode.fadeIn(100);
             }, 200);
         }
     },
@@ -269,6 +270,23 @@ Dial.prototype = {
         }
 
         this.ctx.restore();
+
+        //最左或最右时，改变向前向后按钮的样式
+        if (this.offsetAngle == -this.maxOffsetAngle) {
+            this.isRight = true;
+            this.preBtn.addClass('disable');
+        }else{
+            this.isRight = false;
+            this.preBtn.removeClass('disable');
+        }
+
+        if (this.offsetAngle == 0) {
+            this.isLeft = true;
+            this.nextBtn.addClass('disable');
+        }else{
+            this.isLeft = false;
+            this.nextBtn.removeClass('disable');
+        }
     },
     drawScale: function (angle, radius, cnt, drawActive) {
         if (this.curActiIndex < 0) {
@@ -471,7 +489,6 @@ Dial.prototype = {
             }
 
             if (_this.isBlinkShow) {
-                clearInterval(_this.blinkInterval);
                 _this.blinkNode.fadeOut(0);
                 _this.isBlinkShow = false;
             }
@@ -599,6 +616,7 @@ Dial.prototype = {
             }
         }
     },
+    //鼠标滚轮事件
     handleMouseWheelMove: function(){
         var _this = this;
 
@@ -608,7 +626,6 @@ Dial.prototype = {
             }
 
             if (_this.isBlinkShow) {
-                clearInterval(_this.blinkInterval);
                 _this.blinkNode.fadeOut(0);
                 _this.isBlinkShow = false;
             }
@@ -617,7 +634,7 @@ Dial.prototype = {
 
             var targetAngle = 0;
 
-            if (delta > 0) {
+            if (delta < 0) {
                 targetAngle = _this.offsetAngle + _this.degreesEachDay * 2;
 
                 if (Math.abs(targetAngle) > Math.abs(_this.maxOffsetAngle)) {
@@ -663,7 +680,6 @@ Dial.prototype = {
                 return;
             }
             if (_this.isBlinkShow) {
-                clearInterval(_this.blinkInterval);
                 _this.blinkNode.fadeOut(0);
                 _this.isBlinkShow = false;
             }
@@ -681,7 +697,6 @@ Dial.prototype = {
                 return;
             }
             if (_this.isBlinkShow) {
-                clearInterval(_this.blinkInterval);
                 _this.blinkNode.fadeOut(0);
                 _this.isBlinkShow = false;
             }
@@ -697,10 +712,7 @@ Dial.prototype = {
 
         function showBlinkNode() {
             if (!_this.isBlinkShow) {
-                _this.blinkNode.fadeIn();
-                _this.blinkInterval = setInterval(function () {//闪烁动画
-                    _this.blinkNode.toggle();
-                }, 500);
+                _this.blinkNode.fadeIn(100);
                 _this.isBlinkShow = true;
             }
 
