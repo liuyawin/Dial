@@ -3,6 +3,10 @@ var Dial = function (node, options) {
         return;
     }
 
+    if (options.activities.length == 0) {
+        return;
+    }
+
     options = $.extend({
         p1: {
             x: 0,
@@ -161,7 +165,7 @@ Dial.prototype = {
         }
 
         angle = -(this.degreesEachDay * dayCount - this.options.angle / 2 + this.degreesEachDay);
-      
+
         if (Math.abs(angle) > Math.abs(this.maxOffsetAngle)) {
             angle = -this.maxOffsetAngle;
         }
@@ -275,7 +279,7 @@ Dial.prototype = {
         if (this.offsetAngle == -this.maxOffsetAngle) {
             this.isRight = true;
             this.preBtn.addClass('disable');
-        }else{
+        } else {
             this.isRight = false;
             this.preBtn.removeClass('disable');
         }
@@ -283,7 +287,7 @@ Dial.prototype = {
         if (this.offsetAngle == 0) {
             this.isLeft = true;
             this.nextBtn.addClass('disable');
-        }else{
+        } else {
             this.isLeft = false;
             this.nextBtn.removeClass('disable');
         }
@@ -457,7 +461,7 @@ Dial.prototype = {
         this.$canvas.on('mousemove', this.mouseMoveFunc);
         this.$canvas.on('mouseleave', this.handleMouseLeave.call(this));
         this.$canvas.on('click', this.handleMouseClick.call(this));
-        this.$canvas.dial_mouseWheel(this.handleMouseWheelMove.call(this));
+        // this.$canvas.dial_mouseWheel(this.handleMouseWheelMove.call(this));
 
         this.preBtn.on('click', this.handleScroolRight.call(this));
         this.nextBtn.on('click', this.handleScroolLeft.call(this));
@@ -617,10 +621,10 @@ Dial.prototype = {
         }
     },
     //鼠标滚轮事件
-    handleMouseWheelMove: function(){
+    handleMouseWheelMove: function () {
         var _this = this;
 
-        return function(delta){
+        return function (delta) {
             if (_this.isMoving) {
                 return;
             }
@@ -787,13 +791,23 @@ Dial.prototype = {
     getPreIndex: function () {
         var i = 0;
         var middle = this.canvas.width / 2;
+        var index = 0;
         for (; i < this.curActiPosition.length; i++) {
             var x = this.curActiPosition[i].x;
             if (x < middle) {
                 break;
             }
         }
-        return this.curActiPosition[i].index;
+        if (!this.curActiPosition[i]) {//若下一个活动没有在当前一屏显示出来
+            if (this.options.activities.length > 1) {
+                index = this.curActiPosition[i - 1].index - 1;
+            } else {
+                index = this.curActiPosition[i - 1].index;
+            }
+        } else {
+            index = this.curActiPosition[i].index;
+        }
+        return index;
     },
     getNextIndex: function () {
         var i = this.curActiPosition.length - 1;
@@ -804,7 +818,10 @@ Dial.prototype = {
                 break;
             }
         }
-        return this.curActiPosition[i-1].index;
+        if (i === 0) {
+            i = 1;
+        }
+        return this.curActiPosition[i - 1].index;
     },
     rePaint: function (drawActive) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
