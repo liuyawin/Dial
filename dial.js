@@ -794,7 +794,7 @@ Dial.prototype = {
         var index = 0;
         for (; i < this.curActiPosition.length; i++) {
             var x = this.curActiPosition[i].x;
-            if (x < middle) {
+            if (x < middle - 20) {
                 break;
             }
         }
@@ -812,16 +812,14 @@ Dial.prototype = {
     getNextIndex: function () {
         var i = this.curActiPosition.length - 1;
         var middle = this.canvas.width / 2;
-        for (; i > 1; i--) {
+        for (; i > 0; i--) {
             var x = this.curActiPosition[i].x;
-            if (x > middle) {
+            if (x > middle + 20) {
                 break;
             }
         }
-        if (i === 0) {
-            i = 1;
-        }
-        return this.curActiPosition[i - 1].index;
+
+        return this.curActiPosition[i].index;
     },
     rePaint: function (drawActive) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
