@@ -38,6 +38,12 @@ var Dial = function (node, options) {
     this.r = 0;//圆半径
     this.o = {};//圆心坐标 
 
+    this.D_length = (this.options.p2.x - this.node.width()) / 2;
+    this.p1;
+    this.p2;
+    this.realAuxAngle = 0;
+    this.realAngle = 0;
+
     this.firstScreenIndex = 0;//第一屏显示的活动索引
     this.firstScreenOffsetCount = 0;//第一屏显示时偏移的天数
     this.firstScreenOffsetAngle = 0;//第一屏需要偏移的角度
@@ -109,11 +115,11 @@ Dial.prototype = {
         if (!this.options.activities) {
             return;
         }
+        this.createDial();//创建转盘
         this.initActivitySpan();//计算每两个活动之间间隔的天数
         this.getFirstScreenIndex();
         this.getMaxOffsetAngle();
         this.initOffset();//初始化偏移量，让转盘开始时转到今天
-        this.createDial();//创建转盘
         this.openAnimation();//刚开始时转一下
         this.createTipNode();//创建提示节点
         this.bindEvent();//绑定事件
@@ -164,7 +170,7 @@ Dial.prototype = {
             dayCount += this.activitySpan[i];
         }
 
-        angle = -(this.degreesEachDay * dayCount - this.options.angle / 2 + this.degreesEachDay);
+        angle = -(this.degreesEachDay * dayCount - this.realAngle / 2 + this.degreesEachDay);
 
         if (Math.abs(angle) > Math.abs(this.maxOffsetAngle)) {
             angle = -this.maxOffsetAngle;
@@ -197,11 +203,12 @@ Dial.prototype = {
         return dateCount;
     },
     getMaxOffsetAngle: function () {
-        this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.options.angle + 2 * this.degreesEachDay;
+        this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.realAngle + 2 * this.degreesEachDay;
     },
     createDial: function () {
         this.calculateRadius();//计算半径
         this.calculateO();//计算圆心坐标
+        this.getRealAngle();//适应不同分辨率的屏幕，canvas画布宽度可能不是理想宽度，要进行适配
         this.drawArc();//绘制圆弧
         this.drawScales();//绘制刻度
     },
@@ -251,26 +258,44 @@ Dial.prototype = {
         this.o.x = this.options.p2.x - this.r * Math.cos(this.auxAngle);
         this.o.y = -(this.r * Math.sin(this.auxAngle) - this.options.p2.y);
     },
+    getRealAngle: function () {
+        var D_angle1 = Math.acos((Math.cos(this.auxAngle) * this.r - this.D_length) / this.r) - this.auxAngle;
+        var y3 = this.options.p2.y - this.r * Math.sin(this.auxAngle + D_angle1) + this.r * Math.sin(this.auxAngle);
+
+        var D_angle2 = Math.acos((Math.cos(Math.PI - this.auxAngle - this.options.angle) * this.r - this.D_length) / this.r) - (Math.PI - this.auxAngle - this.options.angle);
+        var y1 = this.options.p1.y - this.r * Math.sin(Math.PI - this.auxAngle - this.options.angle + D_angle2) + this.r * Math.sin(Math.PI - this.auxAngle - this.options.angle);
+
+        this.realAngle = this.options.angle - D_angle1 - D_angle2;
+        this.realAuxAngle = this.auxAngle + D_angle1;
+        this.p1 = {
+            x: 0,
+            y: y1
+        };
+        this.p2 = {
+            x: this.node.width(),
+            y3
+        }
+    },
     drawArc: function () {
         this.ctx.save();
         this.ctx.strokeStyle = this.tickColor;
         this.ctx.lineWidth = 2;
-        this.ctx.arc(this.o.x, this.o.y, this.r, Math.PI / 2 + this.auxAngle, Math.PI / 2 + this.auxAngle + this.options.angle, true);
+        this.ctx.arc(this.o.x, this.o.y, this.r, Math.PI / 2 + this.realAuxAngle, Math.PI / 2 + this.realAuxAngle + this.realAngle, true);
         this.ctx.stroke();
         this.ctx.restore();
     },
     //绘制刻度
     drawScales: function (drawActive) {
         var radius = this.r + this.longTickHeight,
-            ANGLE_MAX = this.options.angle + this.auxAngle,//刻度的最大角度
+            ANGLE_MAX = this.realAngle + this.realAuxAngle,//刻度的最大角度
             ANGlE_DELTA = this.ANGlE_DELTA;//刻度的间隔
 
         this.initParams();//重置相关参数
 
         this.ctx.save();
 
-        for (var angle = this.auxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.2; angle += ANGlE_DELTA, cnt++) {
-            this.drawScale(angle + this.offsetAngle, radius, cnt++, drawActive);
+        for (var angle = this.realAuxAngle, cnt = 0; angle < ANGLE_MAX - this.offsetAngle + 0.2; angle += ANGlE_DELTA, cnt++) {
+            this.drawScale(angle + this.offsetAngle + (this.realAuxAngle - this.auxAngle), radius, cnt++, drawActive);
         }
 
         this.ctx.restore();
@@ -291,6 +316,16 @@ Dial.prototype = {
             this.isLeft = false;
             this.nextBtn.removeClass('disable');
         }
+
+        // this.ctx.save();
+        // this.ctx.strokeStyle = 'red'
+        // this.ctx.beginPath();
+        // this.ctx.moveTo(this.canvas.width / 2, 0);
+        // this.ctx.lineTo( this.canvas.width / 2,this.canvas.height);
+        // this.ctx.stroke();
+        // this.ctx.closePath()
+        // this.ctx.restore();
+        this.ctx.closePath()
     },
     drawScale: function (angle, radius, cnt, drawActive) {
         if (this.curActiIndex < 0) {
@@ -794,7 +829,7 @@ Dial.prototype = {
         var index = 0;
         for (; i < this.curActiPosition.length; i++) {
             var x = this.curActiPosition[i].x;
-            if (x < middle) {
+            if (x < middle - 20) {//角度计算有误差，不可能完全居中，所以用20进行修正
                 break;
             }
         }
@@ -814,14 +849,14 @@ Dial.prototype = {
         var middle = this.canvas.width / 2;
         for (; i > 1; i--) {
             var x = this.curActiPosition[i].x;
-            if (x > middle) {
+            if (x > middle + 20) {//角度计算有误差，不可能完全居中，所以用20进行修正
                 break;
             }
         }
         if (i === 0) {
             i = 1;
         }
-        return this.curActiPosition[i - 1].index;
+        return this.curActiPosition[i].index;
     },
     rePaint: function (drawActive) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
