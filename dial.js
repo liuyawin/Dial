@@ -89,7 +89,7 @@ var Dial = function (node, options) {
 
     this.font = 'normal normal lighter 14px Microsoft Yahei';
 
-    this.curSpan = 2;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
+    this.curSpan = 7;//当前剩余的天数跨度，初始值为2，可以为右边留出一格的距离
     this.ANGlE_DELTA = Math.PI / 2000;//小刻度之间的间距
 
     this.longTickDistance = 20;//控制长刻度的距离
@@ -164,7 +164,7 @@ Dial.prototype = {
             dayCount += this.activitySpan[i];
         }
 
-        angle = -(this.degreesEachDay * dayCount - this.options.angle / 2 + this.degreesEachDay);
+        angle = -(this.degreesEachDay * dayCount - this.options.angle / 2 + this.degreesEachDay * 6);
 
         if (Math.abs(angle) > Math.abs(this.maxOffsetAngle)) {
             angle = -this.maxOffsetAngle;
@@ -197,7 +197,7 @@ Dial.prototype = {
         return dateCount;
     },
     getMaxOffsetAngle: function () {
-        this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.options.angle + 2 * this.degreesEachDay;
+        this.maxOffsetAngle = this.totalDayCount * this.degreesEachDay - this.options.angle + 12 * this.degreesEachDay;
     },
     createDial: function () {
         this.calculateRadius();//计算半径
@@ -236,7 +236,7 @@ Dial.prototype = {
         }
     },
     initParams: function () {
-        this.curSpan = 2;
+        this.curSpan = 7;
         this.curActiIndex = this.options.activities.length;//当前活动的索引，从最后一个开始
         this.curActiPosition = [];
     },
@@ -273,6 +273,7 @@ Dial.prototype = {
             this.drawScale(angle + this.offsetAngle, radius, cnt++, drawActive);
         }
 
+        this.ctx.closePath();
         this.ctx.restore();
 
         //最左或最右时，改变向前向后按钮的样式
@@ -291,11 +292,15 @@ Dial.prototype = {
             this.isLeft = false;
             this.nextBtn.removeClass('disable');
         }
+        // this.ctx.moveTo(960, 0);
+        // this.ctx.lineTo(960,this.canvas.height);
+        // this.ctx.stroke();
+        // this.ctx.closePath();
     },
     drawScale: function (angle, radius, cnt, drawActive) {
-        if (this.curActiIndex < 0) {
-            return;
-        }
+        // if (this.curActiIndex < 0) {
+        //     return;
+        // }
 
         var circleX = this.o.x;
         var circleY = this.o.y;
@@ -529,7 +534,7 @@ Dial.prototype = {
                 y = e.offsetY,
                 index = -1;
 
-            if (this.isMoving) {//正在动画
+            if (_this.isMoving) {//正在动画
                 return;
             }
 
@@ -612,10 +617,11 @@ Dial.prototype = {
                 }
             }
 
-            if (index > 0) {
+            if (index >= 0) {
                 var src = _this.options.activities[index].src;
-                if (src.length > 0) {
-                    window.location.href = src;
+                if (src && src.length > 0) {
+                    window.open(src, '_blank');
+                    // window.location.href = src;
                 }
             }
         }
