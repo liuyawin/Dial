@@ -43,8 +43,10 @@ var Dial = function (node, options) {
     this.firstScreenOffsetAngle = 0;//第一屏需要偏移的角度
     this.isFirstScreenShow = false;
 
-    this.blinkNode = null;//开始时的闪烁节点
-    this.isBlinkShow = true;
+    // this.blinkNode = null;//开始时的闪烁节点
+    // this.isBlinkShow = true;
+
+    this.isMoveDisapper = false;//移动鼠标时提示框是否消失
 
     this.totalDayCount = 0;//总天数
     this.maxOffsetAngle = 0;//最大偏移角度
@@ -134,11 +136,11 @@ Dial.prototype = {
             var date = new Date();
             var curYear = date.getFullYear();
 
-            var tody = Date.parse(curYear + '-' + (date.getMonth() + 1) + '-' + date.getDate());
+            var tody = Date.parse(curYear + '/' + (date.getMonth() + 1) + '/' + date.getDate());
 
             var curMonth = curDate.substring(0, curDate.indexOf('月'));
             var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
-            var formatCur = Date.parse(curYear + '-' + curMonth + '-' + curDay);
+            var formatCur = Date.parse(curYear + '/' + curMonth + '/' + curDay);
 
             if (formatCur - tody >= 0) {
                 this.firstScreenIndex = i;
@@ -180,7 +182,7 @@ Dial.prototype = {
         var date = new Date();
         var curYear = date.getFullYear();
 
-        var tody = Date.parse(curYear + '-' + date.getMonth() + '-' + date.getDate());
+        var tody = Date.parse(curYear + '/' + date.getMonth() + '/' + date.getDate());
 
         var curMonth = curDate.substring(0, curDate.indexOf('月'));
         var curDay = curDate.substring(curDate.indexOf('月') + 1, curDate.length - 1);
@@ -188,8 +190,8 @@ Dial.prototype = {
         var nextMonth = nextDate.substring(0, nextDate.indexOf('月'));
         var nextDay = nextDate.substring(nextDate.indexOf('月') + 1, nextDate.length - 1);
 
-        var formatCur = Date.parse(curYear + '-' + curMonth + '-' + curDay);
-        var formatNext = Date.parse(curYear + '-' + nextMonth + '-' + nextDay);
+        var formatCur = Date.parse(curYear + '/' + curMonth + '/' + curDay);
+        var formatNext = Date.parse(curYear + '/' + nextMonth + '/' + nextDay);
         var dateSpan = formatNext - formatCur;
         dateSpan = Math.abs(dateSpan);
         var dateCount = Math.floor(dateSpan / (24 * 3600 * 1000));
@@ -220,18 +222,20 @@ Dial.prototype = {
                 _this.isFirstScreenShow = true;
                 _this.rePaint();//显示小圆圈和日期
 
-                _this.blinkNode = $('<div class="blink"></div>');
-                var index = _this.options.activities.length - _this.firstScreenIndex - 1;
-                _this.node.append(_this.blinkNode);
+                // _this.blinkNode = $('<div class="blink"></div>');
+                // var index = _this.options.activities.length - _this.firstScreenIndex - 1;
+                // _this.node.append(_this.blinkNode);
 
-                _this.blinkNode.css({
-                    position: 'absolute',
-                    left: _this.curActiPosition[index].x - 6 + 'px',
-                    top: _this.curActiPosition[index].y + 40 + 'px',
-                    display: 'none'
-                });
+                // _this.blinkNode.css({
+                //     position: 'absolute',
+                //     left: _this.curActiPosition[index].x - 6 + 'px',
+                //     top: _this.curActiPosition[index].y + 40 + 'px',
+                //     display: 'none'
+                // });
 
-                _this.blinkNode.fadeIn(100);
+                _this.showTipsByIndex(_this.firstScreenIndex);
+
+                // _this.blinkNode.fadeIn(100);
             }, 200);
         }
     },
@@ -253,10 +257,12 @@ Dial.prototype = {
     },
     drawArc: function () {
         this.ctx.save();
+        this.ctx.beginPath();
         this.ctx.strokeStyle = this.tickColor;
         this.ctx.lineWidth = 2;
         this.ctx.arc(this.o.x, this.o.y, this.r, Math.PI / 2 + this.auxAngle, Math.PI / 2 + this.auxAngle + this.options.angle, true);
         this.ctx.stroke();
+        this.ctx.closePath();
         this.ctx.restore();
     },
     //绘制刻度
@@ -482,7 +488,7 @@ Dial.prototype = {
             $(document).on('mousemove', _this.mouseClickMoveFunc);
         }
     },
-    handleMouseClickMove: function () {
+    handleMouseClickMove: function () {//拖动
         var _this = this;
         return function (e) {
             if (this.isMoving) {//正在动画
@@ -497,10 +503,12 @@ Dial.prototype = {
                 return;
             }
 
-            if (_this.isBlinkShow) {
-                _this.blinkNode.fadeOut(0);
-                _this.isBlinkShow = false;
-            }
+            // if (_this.isBlinkShow) {
+            //     _this.blinkNode.fadeOut(0);
+            //     _this.isBlinkShow = false;
+            // }
+
+            _this.isMoveDisapper = true;
 
             _this.moveLength += e.screenX - _this.preX;//鼠标在x方向移动的累计距离
             _this.preX = e.screenX;
@@ -543,17 +551,17 @@ Dial.prototype = {
                     var pos = _this.curActiPosition[i];
 
                     if (Math.abs(pos.x - x) < 20 && Math.abs(pos.y - y) < 20) {
-                        index = _this.options.activities.length - 1 - i;
+                        index = pos.index;
                         break;
                     }
                 }
             }
 
-            if ((index === _this.preHighlightIndex && _this.isTipShow) || (index < 0 && !_this.isTipShow)) {
+            if (index < 0 && !_this.isTipShow) {
                 return;
             }
 
-            if (_this.isTipShow) {
+            if (_this.isTipShow && _this.isMoveDisapper) {
                 $('.dial-tip').fadeOut(0);
                 _this.isTipShow = false;
             }
@@ -565,6 +573,11 @@ Dial.prototype = {
             _this.rePaint();
 
             if (index >= 0) {
+                if (!_this.isMoveDisapper) {
+                    $('.dial-tip').fadeOut(0);
+                    _this.isTipShow = false;
+                    _this.isMoveDisapper = true;
+                }
 
                 _this.preHighlightIndex = _this.highlightIndex;
                 _this.highlightIndex = index;
@@ -572,7 +585,7 @@ Dial.prototype = {
                 //重绘
                 _this.rePaint(true);
                 _this.isTipShow = true;
-                this.isHighlightShow = true;
+                _this.isHighlightShow = true;
 
                 var $curTipBox = $('.dial-tip' + index);
 
@@ -587,6 +600,9 @@ Dial.prototype = {
     handleMouseLeave: function () {
         var _this = this;
         return function () {
+            if (!_this.isMoveDisapper) {
+                return;
+            }
             if (_this.isTipShow) {
                 $('.dial-tip').fadeOut(0);
                 _this.isTipShow = false;
@@ -635,10 +651,10 @@ Dial.prototype = {
                 return;
             }
 
-            if (_this.isBlinkShow) {
-                _this.blinkNode.fadeOut(0);
-                _this.isBlinkShow = false;
-            }
+            // if (_this.isBlinkShow) {
+            //     _this.blinkNode.fadeOut(0);
+            //     _this.isBlinkShow = false;
+            // }
 
             $('.dial-tip').fadeOut(0);
 
@@ -683,54 +699,71 @@ Dial.prototype = {
         }
         return index;
     },
+    //下一个活动按钮事件
     handleScroolRight: function () {
         var _this = this;
         return function () {
             if (_this.isMoving) {
                 return;
             }
-            if (_this.isBlinkShow) {
-                _this.blinkNode.fadeOut(0);
-                _this.isBlinkShow = false;
+            // _this.isMoveDisapper = true;
+            _this.isMoveDisapper = false;
+
+            if (_this.isTipShow) {
+                $('.dial-tip').fadeOut(0);
+                _this.isTipShow = false;
             }
 
             var nextIndex = _this.getPreIndex();
             var targetAngle = _this.getAngleByActiIndex(nextIndex);
 
-            _this.circleAnimate(targetAngle, 'RIGHT');
+            _this.circleAnimate(targetAngle, 'RIGHT', 0.0002, _this.showTipsByIndex.bind(_this, nextIndex));
         }
     },
+    //上一个活动按钮事件
     handleScroolLeft: function () {
         var _this = this;
         return function () {
             if (_this.isMoving) {
                 return;
             }
-            if (_this.isBlinkShow) {
-                _this.blinkNode.fadeOut(0);
-                _this.isBlinkShow = false;
+            // _this.isMoveDisapper = true;
+            _this.isMoveDisapper = false;
+
+            if (_this.isTipShow) {
+                $('.dial-tip').fadeOut(0);
+                _this.isTipShow = false;
             }
 
             var nextIndex = _this.getNextIndex();
             var targetAngle = _this.getAngleByActiIndex(nextIndex);
 
-            _this.circleAnimate(targetAngle, 'LEFT');
+            _this.circleAnimate(targetAngle, 'LEFT', 0.0002, _this.showTipsByIndex.bind(_this, nextIndex));
         }
     },
+    //刷新按钮事件
     handleRefresh: function () {
         var _this = this;
 
         function showBlinkNode() {
-            if (!_this.isBlinkShow) {
-                _this.blinkNode.fadeIn(100);
-                _this.isBlinkShow = true;
-            }
+            // if (!_this.isBlinkShow) {
+            //     _this.blinkNode.fadeIn(100);
+            //     _this.isBlinkShow = true;
+            // }
 
+            _this.showTipsByIndex(_this.firstScreenIndex);
         }
 
         return function () {
             if (_this.isMoving) {
                 return;
+            }
+
+            _this.isMoveDisapper = false;
+
+            if (_this.isTipShow) {
+                $('.dial-tip').fadeOut(0);
+                _this.isTipShow = false;
             }
 
             if (_this.offsetAngle > _this.firstScreenOffsetAngle) {
@@ -740,6 +773,23 @@ Dial.prototype = {
             }
         }
     },
+
+    showTipsByIndex: function (index) {
+        if (!this.isTipShow) {
+            var i = this.options.activities.length - 1 - index;
+            var pos = this.curActiPosition[i];
+
+            var $curTipBox = $('.dial-tip' + index);
+
+            $curTipBox.css({
+                top: pos.y + 50 + 'px',
+                left: pos.x - 40 + 'px',
+                display: 'block'
+            });
+            this.isTipShow = true;
+        }
+    },
+
     circleAnimate: function (targetAngle, direction, speed, callback) {
         var _this = this;
         var lastTime = +new Date();
